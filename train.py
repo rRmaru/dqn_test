@@ -110,11 +110,11 @@ for epoch in range(EPOCH_NUM):
                 memory_idx = range(len(memory_))
                 for i in memory_idx[::BATCH_SIZE]:
                     batch = memory_[i:i+BATCH_SIZE] # 経験ミニバッチ
-                    pobss = np.array(batch[:][0], dtype="float32").reshape((BATCH_SIZE, obs_num))
-                    pacts = np.array(batch[:][1], dtype="int32")
-                    rewards = np.array(batch[:][2], dtype="int32")
-                    obss = np.array(batch[:][3], dtype="float32").reshape((BATCH_SIZE, obs_num))
-                    dones = np.array(batch[:][4], dtype="bool")
+                    pobss = np.array([b[0] for b in batch], dtype="float32").reshape((BATCH_SIZE, obs_num))
+                    pacts = np.array([b[1] for b in batch], dtype="int32")
+                    rewards = np.array([b[2] for b in batch], dtype="int32")
+                    obss = np.array([b[3] for b in batch], dtype="float32").reshape((BATCH_SIZE, obs_num))
+                    dones = np.array([b[4] for b in batch], dtype="bool")
                     # set y
                     pobss_ = Variable(torch.from_numpy(pobss))
                     q = Q(pobss_)
