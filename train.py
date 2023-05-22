@@ -45,7 +45,7 @@ class NN(nn.Module):
         return y
 
 # 定数
-EPOCH_NUM = 3000 # エポック数
+EPOCH_NUM = 10000 # エポック数
 STEP_MAX = 200 # 最高ステップ数
 MEMORY_SIZE = 200 # メモリサイズいくつで学習を開始するか
 BATCH_SIZE = 50 # バッチサイズ
