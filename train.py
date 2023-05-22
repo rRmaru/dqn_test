@@ -9,8 +9,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
-import gym
-from gym import wrappers
+import gymnasium as gym
+from gymnasium import wrappers
 
 #Generator作成
 rng = np.random.default_rng()
@@ -18,23 +18,23 @@ rng = np.random.default_rng()
 #環境
 # 環境
 MONITOR = False
-env = gym.make("CartPole-v1")
-if MONITOR:
+env = gym.make("CartPole-v1")   #環境作成
+if MONITOR:     #display
     env = wrappers.Monitor(env, "./result", force=True)
 
 obs_num = env.observation_space.shape[0]
 acts_num = env.action_space.n
-HIDDEN_SIZE = 100
+HIDDEN_SIZE = 100   #隠し層
 
 class NN(nn.Module):
     
     def __init__(self):
         
         super(NN, self).__init__()
-        self.fc1 = nn.Linear(obs_num, HIDDEN_SIZE)
+        self.fc1 = nn.Linear(obs_num, HIDDEN_SIZE)  #4 input
         self.fc2 = nn.Linear(HIDDEN_SIZE, HIDDEN_SIZE)
         self.fc3 = nn.Linear(HIDDEN_SIZE, HIDDEN_SIZE)
-        self.fc4 = nn.Linear(HIDDEN_SIZE, acts_num)
+        self.fc4 = nn.Linear(HIDDEN_SIZE, acts_num)   #2 output
     
     def __call__(self, x):
         
@@ -61,16 +61,16 @@ LOG_FREQ = 1000 # ログ出力の間隔
 # モデル
 Q = NN() # 近似Q関数
 Q_ast = copy.deepcopy(Q)
-optimizer = optim.RMSprop(Q.parameters(), lr=0.00015, alpha=0.95, eps=0.01)
+optimizer = optim.RMSprop(Q.parameters(), lr=0.00015, alpha=0.95, eps=0.01) #最適化関数
 
 total_step = 0 # 総ステップ（行動）数
 memory = [] # メモリ
 total_rewards = [] # 累積報酬記録用リスト
 
 # 学習開始
-print("\t".join(["epoch", "epsilon", "reward", "total_step", "elapsed_time"]))
+print("\t".join(["epoch", "epsilon", "    reward", "    total_step", "elapsed_time"]))
 start = time.time()
-for epoch in range(EPOCH_NUM):
+for epoch in range(EPOCH_NUM): #replay for epoch_num
     
     pobs = env.reset() # 環境初期化
     step = 0 # ステップ数
@@ -88,7 +88,7 @@ for epoch in range(EPOCH_NUM):
             pobs_ = np.array(pobs, dtype="float32").reshape((1, obs_num))
             pobs_ = Variable(torch.from_numpy(pobs_))
             pact = Q(pobs_)
-            maxs, indices = torch.max(pact.data, 1)
+            maxs, indices = torch.max(pact.data, 1) #valueとindicesが返ってくる
             pact = indices.numpy()[0]
             
         # 行動
@@ -99,14 +99,14 @@ for epoch in range(EPOCH_NUM):
         # メモリに蓄積
         memory.append((pobs, pact, reward, obs, done)) # 状態、行動、報酬、行動後の状態、ゲーム終了フラグ
         if len(memory) > MEMORY_SIZE: # メモリサイズを超えていれば消していく
-            memory.pop(0)
+            memory.pop(0)       #古いものから消す
             
         # 学習
         if len(memory) == MEMORY_SIZE: # メモリサイズ分溜まっていれば学習
             # 経験リプレイ
             if total_step % TRAIN_FREQ == 0:
                 memory_ = memory.copy()
-                rng.shuffle(memory_)
+                rng.shuffle(memory_)        #memoryの順番をランダムに入れ替える
                 memory_idx = range(len(memory_))
                 for i in memory_idx[::BATCH_SIZE]:
                     batch = memory_[i:i+BATCH_SIZE] # 経験ミニバッチ
