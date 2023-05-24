@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn 
 import torch.nn.functional as F
 import torch.optim as option
+from torch.autograd import Variable
 
 import numpy as np
 import gymnasium as gym
@@ -15,7 +16,7 @@ from replay_buffer import ReplayBuffer
 rng = np.random.default_rng()
 
 #make environment
-env = gym.make('MountainCarContinuous-v0')
+env = gym.make('MountainCar-v0')
 obs_num = env.observation_space.shape[0]
 act_num = env.action_space.shape[0]
 
@@ -50,13 +51,27 @@ def main():
     start = time.time()
     
     for episode in range(settings.EPISODE_NUM):
-        pobs = env.reset()
+        pobs, _ = env.reset()
         step = 0        #step
         done = False    #judge end game
         tortal_reward = 0   #累積報酬
-        
-        while not done and step < settings.STEP_MAX:
-            #行動選択
+        print(pobs)
+        while not done and (step < settings.STEP_MAX):
+            #行動選択(適当な行動値)
             act = env.action_space.sample()
-            
+            # ε-greedy法
+            if rng.random() < settings.EPSILON:
+                pobs_ = np.array(pobs, dtype="float32").reshape((1, obs_num))
+                pobs_ = Variable(torch.from_numpy(pobs_))
+                act = Q_train(pobs_)
+                max, indices = torch.max(act.data, 1)  #valueとindicesが返ってくる
+                act = indices.detach().cpu().numpy()[0]
+
+            #実行
+            obs, reward, done, _, _ = env.step(act)
+
+            break
+
+if __name__ == "__main__":
+    main()            
 # %%
