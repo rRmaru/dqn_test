@@ -1,3 +1,4 @@
+#%%
 import torch
 import copy
 import time
@@ -12,13 +13,23 @@ from torch.autograd import Variable
 import gym
 from gym import wrappers
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if torch.cuda.is_available():
+    device_name = 'cuda:0'
+else:
+    device_name = 'cpu'
+print('device name:{}'.format(device_name))
+device = torch.device(device_name)
 
-BATCH_SIZE_TRAIN = 128
-BATCH_SIZE_VALID = 128
-GAMMA = 0.999
-EPS_START = 0.9
-EPS_END = 0.05
-EPS_DECAY = 200
-
-EPOCHS = 1000
+# 定数
+EPOCH_NUM = 3000 # エポック数
+STEP_MAX = 200 # 最高ステップ数
+MEMORY_SIZE = 200 # メモリサイズいくつで学習を開始するか
+BATCH_SIZE = 50 # バッチサイズ
+EPSILON = 1.0 # ε-greedy法
+EPSILON_DECREASE = 0.001 # εの減少値
+EPSILON_MIN = 0.1 # εの下限
+START_REDUCE_EPSILON = 200 # εを減少させるステップ数
+TRAIN_FREQ = 10 # Q関数の学習間隔
+UPDATE_TARGET_Q_FREQ = 20 # Q関数の更新間隔
+GAMMA = 0.97 # 割引率
+LOG_FREQ = 1000 # ログ出力の間隔

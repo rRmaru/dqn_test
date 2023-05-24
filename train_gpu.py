@@ -39,11 +39,12 @@ class NN(nn.Module):
         self.fc4 = nn.Linear(HIDDEN_SIZE, acts_num)   #2 output
     
     def __call__(self, x):
+        x.to(settings.device)
         h = F.relu(self.fc1(x))
         h = F.relu(self.fc2(h))
         h = F.relu(self.fc3(h))
         y = F.relu(self.fc4(h))
-        return y
+        return y.to(settings.device)
 
 # モデル
 Q = NN() # 近似Q関数
@@ -76,7 +77,7 @@ for epoch in range(settings.EPOCH_NUM): #replay for epoch_num
             pobs_ = Variable(torch.from_numpy(pobs_))
             pact = Q(pobs_)
             maxs, indices = torch.max(pact.data, 1) #valueとindicesが返ってくる
-            pact = indices.numpy()[0]
+            pact = indices.detach().cpu().numpy()[0]
             
         # 行動
         obs, reward, done, _, _ = env.step(pact)
@@ -107,13 +108,13 @@ for epoch in range(settings.EPOCH_NUM): #replay for epoch_num
                     q = Q(pobss_)
                     obss_ = Variable(torch.from_numpy(obss))
                     maxs, indices = torch.max(Q_ast(obss_).data, 1)
-                    maxq = maxs.numpy() # maxQ
-                    target = copy.deepcopy(q.data.numpy())
+                    maxq = maxs.detach().cpu().numpy() # maxQ
+                    target = copy.deepcopy(q.data.detach().cpu().numpy())
                     for j in range(settings.BATCH_SIZE):
                         target[j, pacts[j]] = rewards[j]+settings.GAMMA*maxq[j]*(not dones[j]) # 教師信号
                     # Perform a gradient descent step
                     optimizer.zero_grad()
-                    loss = nn.MSELoss()(q, Variable(torch.from_numpy(target)))
+                    loss = nn.MSELoss()(q, Variable(torch.from_numpy(target)).to(settings.device))
                     loss.backward()
                     optimizer.step()
             # Q関数の更新
