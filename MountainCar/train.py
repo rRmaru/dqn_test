@@ -31,12 +31,11 @@ class NN(nn.Module):
         self.fc4 = nn.Linear(settings.HIDDEN_SIZE, act_num)
         
     def forward(self, x):
-        x.to(settings.device)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
         y = F.relu(self.fc4(x))
-        return y.to(settings.device)
+        return y
         
 def main():
     Q_train = NN()
@@ -65,7 +64,7 @@ def main():
                 pobs_ = Variable(torch.from_numpy(pobs_))
                 act = Q_train(pobs_)
                 max, indices = torch.max(act.data, 1)  #valueとindicesが返ってくる
-                act = indices.detach().cpu().numpy()[0]
+                act = indices.numpy()[0]
 
             #実行
             obs, reward, done, _, _ = env.step(act)
@@ -82,7 +81,7 @@ def main():
                         pobss = np.array([b[0] for b in batch], dtype="float32").reshape((settings.BATCH_SIZE, obs_num))
                         acts = np.array([b[1] for b in batch], dtype="float32")
                         rewards = np.array([b[2] for b in batch], dtype="float32")
-                        obss = np.array([b[3] for b in batch], dtype="float32").reshape((settings.BATCH_SISE, obs_num))
+                        obss = np.array([b[3] for b in batch], dtype="float32").reshape((settings.BATCH_SIZE, obs_num))
                         dones = np.array([b[4] for b in batch], dtype="float32")
                         
                         #set y
@@ -93,7 +92,7 @@ def main():
                         maxq = maxs.numpy() #maxQ
                         target = copy.deepcopy(q.data.numpy())
                         for j in range(settings.BATCH_SIZE):
-                            target[j, acts[j]] = rewards[j] + settings.GAMMA*maxq[j]*(not dones[j])    #教師信号
+                            target[j, acts[j]] = rewards[j]+settings.GAMMA*maxq[j]*(not dones[j])    #教師信号
                         optimizer.zero_grad()
                         loss = nn.MSELoss()(q, Variable(torch.from_numpy(target)))
                         loss.backward()

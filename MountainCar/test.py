@@ -15,10 +15,15 @@ def main():
     print(len(memory))
     
     sample = memory.sample(3)
-    print(sample)
+    print(type(sample))
     
     print("memory:{}".format(memory.memory_))
     
 if __name__ == "__main__":
     main()
-# %%
+#%%
+import numpy as np
+
+a = np.array([1,2,3,4])
+print(a[1,3])
+
