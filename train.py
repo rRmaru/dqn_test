@@ -59,7 +59,7 @@ print("\t".join(["epoch", "epsilon", "reward", "total_step", "elapsed_time"]))
 start = time.time()
 for epoch in range(settings.EPOCH_NUM): #replay for epoch_num
     
-    pobs = env.reset() # 環境初期化
+    pobs, _ = env.reset() # 環境初期化
     step = 0 # ステップ数
     done = False # ゲーム終了フラグ
     total_reward = 0 # 累積報酬

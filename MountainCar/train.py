@@ -39,7 +39,7 @@ class NN(nn.Module):
         
 def main():
     Q_train = NN()
-    Q_target = NN()
+    Q_target = copy.deepcopy(Q_train)
     optimizer = option.RMSprop(Q_train.parameters(), lr=0.00015, alpha=0.95, eps=0.01)  #最適化
     
     total_step = 0
@@ -59,7 +59,7 @@ def main():
             #行動選択(適当な行動値)
             act = env.action_space.sample()
             # ε-greedy法
-            if rng.random() < settings.EPSILON:
+            if rng.random() > settings.EPSILON:
                 pobs_ = np.array(pobs, dtype="float32").reshape((1, obs_num))
                 pobs_ = Variable(torch.from_numpy(pobs_))
                 act = Q_train(pobs_)
@@ -69,6 +69,13 @@ def main():
             #実行
             obs, reward, done, _, _ = env.step(act)
             
+            # update reward 1
+            if obs[0] > -0.2 :
+                reward = 0.5
+            
+            # update reward 2
+            if obs[0] > 0.5:
+                reward = 100
             #add memory
             memory.add((pobs, act, reward, obs, done))  #次状態、行動、報酬、状態、エピソード終了判定をbufferに格納
             
@@ -79,7 +86,7 @@ def main():
                     for i in range(int(settings.BAFFER_SIZE/settings.BATCH_SIZE)):
                         batch = memory.sample(settings.BATCH_SIZE)
                         pobss = np.array([b[0] for b in batch], dtype="float32").reshape((settings.BATCH_SIZE, obs_num))
-                        acts = np.array([b[1] for b in batch], dtype="float32")
+                        acts = np.array([b[1] for b in batch], dtype="int")
                         rewards = np.array([b[2] for b in batch], dtype="float32")
                         obss = np.array([b[3] for b in batch], dtype="float32").reshape((settings.BATCH_SIZE, obs_num))
                         dones = np.array([b[4] for b in batch], dtype="float32")
@@ -101,7 +108,7 @@ def main():
                 if total_step % settings.UPDATE_TARGET_Q_FREQ == 0:
                     Q_target = copy.deepcopy(Q_train)
             #εの減少
-            if settings.EPSILON > settings.EPISODE_NUM and total_step > settings.START_REDUCE_EPSIOLON:
+            if settings.EPSILON > settings.EPSILON_MIN and total_step > settings.START_REDUCE_EPSILON:
                 settings.EPSILON -= settings.EPSILON_DECREASE
                 
             #次の行動へ
