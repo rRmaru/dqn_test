@@ -46,6 +46,9 @@ def main():
     #学習全体のstep数を管理する
     total_step = 0
     
+    #epsilon
+    epsilon = settings.EPSILON
+    
     #エピソード開始
     print("\t".join(["episode", "epsilon", "reward", "episode", "time"]))
     start = time.time()
@@ -60,7 +63,7 @@ def main():
             #行動選択
             act = env.action_space.sample()
             #ε-greedy法
-            if rng.random() > settings.EPSILON:
+            if rng.random() > epsilon:
                 pobs_ = np.array(pobs, dtype="float32").reshape((1, obs_num))     #2次元ベクトル
                 pobs_ = Variable(torch.from_numpy(pobs_))                         #計算グラフの機能を持たせれる
                 act = Q_train(pobs_)                              #行動の計算
@@ -71,11 +74,12 @@ def main():
             
             if done:
                 reward = -1
+                break
             memory.add([pobs, act, reward, obs, done])
             
             
             #学習
-            if len(memory) == settings.BAFFER_SIZE:      #大体、60エピソード目から学習が始まる
+            if len(memory) == settings.BAFFER_SIZE:      #大体、~エピソード目から学習が始まる
                 if total_step % settings.TRAIN_FREQ == 0:
                     batchs = memory.sample(settings.BATCH_SIZE)
                     for batch in batchs:
@@ -93,15 +97,15 @@ def main():
                         maxq = maxs.numpy()
                         target = copy.deepcopy(q.data.numpy())
                         for j in range(settings.BATCH_SIZE):
-                            target[j, int(acts[j])] = rewards[j] + settings.GAMMA*maxq[j]*(not dones[j])  #教師信号
+                            target[j, acts[j]] = rewards[j] + settings.GAMMA*maxq[j]*(not dones[j])  #教師信号
                         optimizer.zero_grad()
                         loss = criterion(q, Variable(torch.from_numpy(target)))
                         loss.backward()
                         optimizer.step()
                 if total_step % settings.UPDATE_TARGET_Q_FREQ == 0:
                     Q_target = copy.deepcopy(Q_train)
-            if settings.EPSILON > settings.EPSILON_MIN and total_step > settings.START_REDUCE_EPSILON:
-                settings.EPSILON -= settings.EPSILON_DECREASE
+            if epsilon > settings.EPSILON_MIN and total_step > settings.START_REDUCE_EPSILON:
+                epsilon -= settings.EPSILON_DECREASE
             
             
             #次の行動へ
@@ -115,7 +119,7 @@ def main():
         if (episode + 1) % settings.LOG_FREQ == 0:
             r = sum(total_rewards[((episode + 1) - settings.LOG_FREQ):(episode + 1)])/settings.LOG_FREQ
             elapsed_time = time.time() - start
-            print("\t".join(map(str, [episode + 1, settings.EPSILON, r, total_step, str(elapsed_time)+"[sec]"])))
+            print("\t".join(map(str, [episode + 1, epsilon, r, total_step, str(elapsed_time)+"[sec]"])))
             start = time.time()
     env.close()
 
