@@ -9,6 +9,7 @@ import torch.optim as optim
 import copy
 import time
 import csv
+import random
 
 from nn import NN, DQN
 from replay_buffer import Replay_buffer
@@ -22,6 +23,18 @@ def init_parameters(layer):
     if type(layer) == nn.Linear:
         nn.init.xavier_uniform_(layer.weight)   #重みを「一様のランダム値」に初期化
         layer.bias.data.fill_(0.0)              #バイアスを「0」に初期化
+        
+def torch_fix_seed(seed=42):
+    #python random
+    random.seed(seed)
+    #numpy random
+    np.random.seed(seed)
+    #pytorch 
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.use_deterministic_algorithms(True)
+    
 
 def main():
     env = gym.make("CartPole-v1")    #環境の構築
@@ -30,6 +43,9 @@ def main():
     #NNを作成
     Q_train = NN(obs_num, act_num)              
     Q_target = copy.deepcopy(Q_train)
+    
+    for param in Q_train.parameters():
+        print(param)
     
     #損失関数、最適化関数を指定
     optimizer = optim.RMSprop(Q_train.parameters(), lr=settings.LEANING_RATE, alpha=0.95, eps=0.01)     #最適化
@@ -139,4 +155,5 @@ def main():
     env.close()
 
 if __name__ == "__main__":
+    torch_fix_seed()
     main()
