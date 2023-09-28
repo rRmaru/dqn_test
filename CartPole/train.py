@@ -8,6 +8,7 @@ from torchviz import make_dot
 import torch.optim as optim
 import copy
 import time
+import csv
 
 from nn import NN, DQN
 from replay_buffer import Replay_buffer
@@ -42,6 +43,9 @@ def main():
 
     #エピソードごとの報酬を格納するリスト
     total_rewards = []
+    
+    #報酬値を格納するリスト
+    graph_reawrds = []
 
     #学習全体のstep数を管理する
     total_step = 0
@@ -74,12 +78,13 @@ def main():
             
             if done:
                 reward = -1
+                memory.add([pobs, act, reward, obs, done])
                 break
             memory.add([pobs, act, reward, obs, done])
             
             
             #学習
-            if len(memory) == settings.BAFFER_SIZE:      #大体、~エピソード目から学習が始まる
+            if len(memory) == settings.BAFFER_SIZE:
                 if total_step % settings.TRAIN_FREQ == 0:
                     batchs = memory.sample(settings.BATCH_SIZE)
                     for batch in batchs:
@@ -115,12 +120,22 @@ def main():
         
         total_rewards.append(sum_reward)        #累積報酬を記録
         
-        #報酬値の記録
+        #学習途中(報酬値)の記録
         if (episode + 1) % settings.LOG_FREQ == 0:
             r = sum(total_rewards[((episode + 1) - settings.LOG_FREQ):(episode + 1)])/settings.LOG_FREQ
             elapsed_time = time.time() - start
             print("\t".join(map(str, [episode + 1, epsilon, r, total_step, str(elapsed_time)+"[sec]"])))
+            graph_reawrds.append(r)
             start = time.time()
+      
+    #学習結果（報酬値）の書き込み      
+    with open("./result/test/cartpole_test.csv", "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(graph_reawrds)
+        
+    #学習モデルの保存
+    torch.save(Q_train, './result/test/model_weight.pth')
+    
     env.close()
 
 if __name__ == "__main__":
