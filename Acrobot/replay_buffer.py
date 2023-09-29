@@ -12,6 +12,7 @@ class Replay_buffer(object):
         self._memory.append(input)
         
     def sample(self, batch_size):
+        random.seed(42)
         sample_list = []
         random.shuffle(self._memory)
         for i in range(int(self.size/batch_size)):
