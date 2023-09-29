@@ -1,10 +1,10 @@
 #%%
 import gymnasium as gym
+from gymnasium.wrappers.record_video import RecordVideo
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from torchviz import make_dot
 import torch.optim as optim
 import copy
 import time
@@ -17,7 +17,6 @@ import settings
 
 #randomのジェネレーター作成
 rng = np.random.default_rng()
-
 
 def init_parameters(layer):
     if type(layer) == nn.Linear:
@@ -34,18 +33,23 @@ def torch_fix_seed(seed=42):
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.use_deterministic_algorithms(True)
+    #gymnasiumについては後述
     
 
 def main():
-    env = gym.make("CartPole-v1")    #環境の構築
+    env = gym.make("CartPole-v1", render_mode="rgb_array")    #環境の構築
+    #gymのseedを固定する
+    seed = 42
+    env.action_space.seed(seed)
+    env.observation_space.seed(seed)
+    env.reset(seed=seed)
+    
+    env = RecordVideo(env=env, video_folder="./movie_folder/test", episode_trigger= (lambda x: x%200==0) or 999)
     obs_num = env.observation_space.shape[0]    #環境から観測のtensorの型を取得
     act_num = env.action_space.n                #環境から行動のtensorの型を取得
     #NNを作成
     Q_train = NN(obs_num, act_num)              
     Q_target = copy.deepcopy(Q_train)
-    
-    for param in Q_train.parameters():
-        print(param)
     
     #損失関数、最適化関数を指定
     optimizer = optim.RMSprop(Q_train.parameters(), lr=settings.LEANING_RATE, alpha=0.95, eps=0.01)     #最適化
@@ -157,3 +161,4 @@ def main():
 if __name__ == "__main__":
     torch_fix_seed()
     main()
+# %%
