@@ -18,6 +18,12 @@ import settings
 #randomのジェネレーター作成
 rng = np.random.default_rng()
 
+#PERを作成するかどうか
+per_flag = False
+
+#動画を作成するかどうか
+display_flag = False
+
 def init_parameters(layer):
     if type(layer) == nn.Linear:
         nn.init.xavier_uniform_(layer.weight)   #重みを「一様のランダム値」に初期化
@@ -33,7 +39,19 @@ def torch_fix_seed(seed=42):
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.use_deterministic_algorithms(True)
+    torch.backends.cudnn.benckmark = False
     #gymnasiumについては後述
+    
+#GPUの設定
+def setting_gpu():
+    if torch.cuda.is_available():
+        d_type = "cuda:0"
+    else:
+        d_type = "cpu"
+        
+    device = torch.device(d_type)
+    
+    return device
     
 
 def main():
@@ -43,12 +61,17 @@ def main():
     env.action_space.seed(seed)
     env.observation_space.seed(seed)
     env.reset(seed=seed)
-    
-    env = RecordVideo(env=env, video_folder="./movie_folder/test", episode_trigger= (lambda x: x%200==0) or 999)
+    if display_flag:
+        env = RecordVideo(env=env, video_folder="./movie_folder/test", episode_trigger= (lambda x: x%200==0) or 999)
+
     obs_num = env.observation_space.shape[0]    #環境から観測のtensorの型を取得
     act_num = env.action_space.n                #環境から行動のtensorの型を取得
+    
+    #GPU設定
+    #device = setting_gpu()
+    
     #NNを作成
-    Q_train = NN(obs_num, act_num)              
+    Q_train = NN(obs_num, act_num)          
     Q_target = copy.deepcopy(Q_train)
     
     #損失関数、最適化関数を指定

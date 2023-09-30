@@ -13,7 +13,7 @@ def main():
             
     #グラフ描画領域
     save_step = 50
-    max_episode = 2000
+    max_episode = 1000
     x = range(save_step, max_episode+save_step, save_step)
     y = row
     
